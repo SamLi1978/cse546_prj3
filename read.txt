@@ -1,0 +1,22 @@
+
+Run a docker image in the foregound with an interactive bash
+
+sudo docker run -it mydockerimage:0.1 /bin/bash
+
+
+
+Run a docker image in background
+
+sudo docker run -p 9000:8080 mydockerimage:0.1
+
+9000 is the port of your host
+8000 is the port of your docker container
+
+
+Test a docker container running in background
+
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"payload":"your_payload"}'
+
+
+
+sudo docker exec -it 8b89d42e3b6f /bin/bash
