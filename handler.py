@@ -9,9 +9,9 @@ output_bucket = "cse546-p3-out-s3"
 video_path = "video_downloaded"
 frame_path = "frame_extracted"
 
-def download_videos_from_in_s3(in_s3):
+def download_videos_from_in_s3():
     s3 = boto3_client('s3')
-    list_obj = s3.list_objects_v2(Bucket=in_s3)
+    list_obj = s3.list_objects_v2(Bucket=input_bucket)
     try:
         for item in list_obj["Contents"]:
             file_name = item["Key"]
@@ -35,7 +35,24 @@ def extract_image_from_video():
             print(filetitle[0])
             if not os.path.exists(frame_path): 
                 os.makedirs(frame_path)
-            os.system("ffmpeg -i " + f'{video_path}/{filename}' + " -frames:v 1 " + f"{frame_path}/{filetitle[0]}.jpeg")
+            os.system("ffmpeg -y -i " + f'{video_path}/{filename}' + " -frames:v 1 " + f"{frame_path}/{filetitle[0]}.jpeg")
+      
+def search_face_from_encodings(encoding_target, encodings):
+    pass
+    
+
+def recognize_face():
+    encoding_list = []
+    for filename in os.listdir(frame_path):
+        #filename.endswith(".jpeg") or filename.endswith(".JPEG"):
+            print(filename)
+            print(f"{frame_path}/{filename}")
+            #image_data = face_recognition.load_image_file(f"{frame_path}/{filename}")
+            #encoding = face_recognition.face_encodings(image_data)[0]
+            #print(encoding)
+            #encoding_list.append(encoding)
+            return encoding_list
+            
 
 # Function to read the 'encoding' file
 def open_encoding(filename):
@@ -72,5 +89,15 @@ if __name__ == '':
     print(results)
 
 if __name__ == '__main__':
-    #download_videos_from_in_s3(input_bucket)
+    download_videos_from_in_s3()
     extract_image_from_video()
+    
+    encodings = open_encoding('encoding')
+    print(encodings)
+    encoding_list = recognize_face()
+    print(f"len = {len(encoding_list)}")
+    for i in encoding_list:
+        print(i)
+        #pass
+    
+    

@@ -14,8 +14,8 @@ def clear_input_bucket():
             key = item["Key"]
             print(key)
             s3.delete_object(Bucket=input_bucket, Key=key)
-    except:
-        print("Nothing to clear in input bucket")
+    except Exception as e:
+        print(e)
 	
 def clear_output_bucket():
 	global output_bucket
@@ -24,9 +24,10 @@ def clear_output_bucket():
 	try:
 		for item in list_obj["Contents"]:
 			key = item["Key"]
+			print(key)
 			s3.delete_object(Bucket=output_bucket, Key=key)
-	except:
-		print("Nothing to clear in output bucket")
+	except Exception as e:
+		print(e)
 
 def upload_to_input_bucket_s3(path, name):
 	global input_bucket
@@ -61,8 +62,9 @@ def workload_generator():
 	
 print(input_bucket)
 clear_input_bucket()
-workload_generator()	
-#clear_output_bucket()	
 
+clear_output_bucket()	
+
+workload_generator()	
 	
 
