@@ -62,9 +62,7 @@ def workload_generator():
 	
 print(input_bucket)
 clear_input_bucket()
-
 clear_output_bucket()	
-
 workload_generator()	
 	
 

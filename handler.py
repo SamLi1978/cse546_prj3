@@ -85,29 +85,6 @@ def face_recognition_handler(event, context):
 	print("Hello")
 
 
-if __name__ == '__main':
-
-    da = open_encoding('encoding')
-    print(da['name'])
-    #print(da['encoding'])
-    nd = da['encoding'][-1]
-    print(type(nd))
-    print(nd)
-    l = nd.tolist()
-    #print(l)
-    #print(len(l))
-
-    known_image = face_recognition.load_image_file("frame_extracted/test_1.jpeg")
-    #print(type(known_image))
-    #print(known_image)
-    encoding_a = face_recognition.face_encodings(known_image)[0]
-    print(type(encoding_a))
-    print(encoding_a)
-
-
-    results = face_recognition.compare_faces([nd], encoding_a)
-    print(results[0])
-
 if __name__ == '__main__':
 
     encodings = open_encoding('encoding')
@@ -124,5 +101,5 @@ if __name__ == '__main__':
         face_encoding = get_face_encoding(jpeg_file)   
         person = search_face_from_encodings(face_encoding, encodings)     
         if (person != None):
-            print(jpeg_file, person[0])
+            print(mp4_file, person[0])
     
