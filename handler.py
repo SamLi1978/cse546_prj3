@@ -10,48 +10,68 @@ video_path = "video_downloaded"
 frame_path = "frame_extracted"
 
 def download_videos_from_in_s3():
+    
+    mp4_file_list = []
+    
     s3 = boto3_client('s3')
     list_obj = s3.list_objects_v2(Bucket=input_bucket)
+
     try:
         for item in list_obj["Contents"]:
             file_name = item["Key"]
             print(file_name)
+            mp4_file_list.append(file_name)
         
             if not os.path.exists(video_path): 
                 os.makedirs(video_path)
 
             with open(f'{video_path}/{file_name}', "wb") as f:
-                s3.download_fileobj(in_s3, file_name, f)
+                s3.download_fileobj(input_bucket, file_name, f)
+
+        return mp4_file_list
+
     except Exception as e:
         print(e)
 
-#ffmpeg -i test_0.mp4 -frames:v 1 a.jpeg
+'''
+ffmpeg -y -i test_0.mp4 -frames:v 1 a.jpeg > /dev/null 2>&1
+'''
 
-def extract_image_from_video():
-    for filename in os.listdir(video_path):
-        if filename.endswith(".mp4") or filename.endswith(".MP4"):
-            print(filename)
-            filetitle = filename.rsplit('.')
-            print(filetitle[0])
-            if not os.path.exists(frame_path): 
-                os.makedirs(frame_path)
-            os.system("ffmpeg -y -i " + f'{video_path}/{filename}' + " -frames:v 1 " + f"{frame_path}/{filetitle[0]}.jpeg")
-      
-def search_face_from_encodings(encoding_target, encodings):
-    pass
+def extract_image_from_video(mp4_file):
+
+    filetitle = mp4_file.rsplit('.')
     
+    #print(filetitle[0])
+    if not os.path.exists(frame_path): 
+        os.makedirs(frame_path)
+    os.system("ffmpeg -y -i " + f'{video_path}/{mp4_file}' + " -frames:v 1 " + f"{frame_path}/{filetitle[0]}.jpeg > /dev/null 2>&1")
 
-def recognize_face():
-    encoding_list = []
-    for filename in os.listdir(frame_path):
-        #filename.endswith(".jpeg") or filename.endswith(".JPEG"):
-            print(filename)
-            print(f"{frame_path}/{filename}")
-            #image_data = face_recognition.load_image_file(f"{frame_path}/{filename}")
-            #encoding = face_recognition.face_encodings(image_data)[0]
-            #print(encoding)
-            #encoding_list.append(encoding)
-            return encoding_list
+    return f"{filetitle[0]}.jpeg"
+        
+
+def search_face_from_encodings(face_encoding, encodings):
+
+    name_list = encodings['name']
+    encoding_list = encodings['encoding']
+
+    for i in range(0, len(name_list)):
+        name = name_list[i]
+        #print(name)
+        encoding = encoding_list[i]
+        #print(encoding)
+        #print(face_encoding)
+        result = face_recognition.compare_faces([face_encoding], encoding)
+        if (result[0] == True):
+            return (name,encoding)
+    
+    return None
+
+def get_face_encoding(jpeg_file):
+    
+    image_data = face_recognition.load_image_file(f"{frame_path}/{jpeg_file}")
+    face_encoding = face_recognition.face_encodings(image_data)[0]
+    #print(face_encoding)
+    return face_encoding
             
 
 # Function to read the 'encoding' file
@@ -65,7 +85,7 @@ def face_recognition_handler(event, context):
 	print("Hello")
 
 
-if __name__ == '':
+if __name__ == '__main':
 
     da = open_encoding('encoding')
     print(da['name'])
@@ -77,7 +97,7 @@ if __name__ == '':
     #print(l)
     #print(len(l))
 
-    known_image = face_recognition.load_image_file("test001.jpeg")
+    known_image = face_recognition.load_image_file("frame_extracted/test_1.jpeg")
     #print(type(known_image))
     #print(known_image)
     encoding_a = face_recognition.face_encodings(known_image)[0]
@@ -85,19 +105,24 @@ if __name__ == '':
     print(encoding_a)
 
 
-    results = face_recognition.compare_faces(nd, [encoding_a])
-    print(results)
+    results = face_recognition.compare_faces([nd], encoding_a)
+    print(results[0])
 
 if __name__ == '__main__':
-    download_videos_from_in_s3()
-    extract_image_from_video()
-    
+
     encodings = open_encoding('encoding')
-    print(encodings)
-    encoding_list = recognize_face()
-    print(f"len = {len(encoding_list)}")
-    for i in encoding_list:
-        print(i)
-        #pass
+    #print(encodings)
+
+    mp4_list = download_videos_from_in_s3()
+    #print(mp4_list)
     
+    for mp4_file in mp4_list:
+
+        jpeg_file = extract_image_from_video(mp4_file)
+        #print(jpeg_file)
+
+        face_encoding = get_face_encoding(jpeg_file)   
+        person = search_face_from_encodings(face_encoding, encodings)     
+        if (person != None):
+            print(jpeg_file, person[0])
     
