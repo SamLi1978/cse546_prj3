@@ -1,19 +1,20 @@
-from boto3 import client as boto3_client
+import boto3
 import face_recognition
 import pickle
 from numpy import ndarray
 import os
+import csv
 
 input_bucket = "cse546-p3-in-s3"
 output_bucket = "cse546-p3-out-s3"
 video_path = "video_downloaded"
 frame_path = "frame_extracted"
+student_info_path = "student_info"
 
-def download_videos_from_in_s3():
+def download_videos_from_in_s3(s3):
     
     mp4_file_list = []
-    
-    s3 = boto3_client('s3')
+
     list_obj = s3.list_objects_v2(Bucket=input_bucket)
 
     try:
@@ -71,8 +72,7 @@ def get_face_encoding(jpeg_file):
     image_data = face_recognition.load_image_file(f"{frame_path}/{jpeg_file}")
     face_encoding = face_recognition.face_encodings(image_data)[0]
     #print(face_encoding)
-    return face_encoding
-            
+    return face_encoding       
 
 # Function to read the 'encoding' file
 def open_encoding(filename):
@@ -81,16 +81,52 @@ def open_encoding(filename):
 	file.close()
 	return data
 
+
+
+def load_dynamodb():
+    dynamodb = boto3.resource('dynamodb')
+    student_table = dynamodb.Table('student')
+
+    dataset = student_table.scan()
+    items = dataset['Items']
+    return items
+
+
+def find_item(name, items):
+    for item in items:
+        if (name == item['name']):
+            return item
+    return None
+
+
+def save_and_get_csv_file(filetitle, name, major, year):
+    if not os.path.exists(student_info_path): 
+        os.makedirs(student_info_path)    
+    filename = f'{student_info_path}/{filetitle}.csv'
+    #print(filename)
+    with open(filename, 'w') as csvfile:
+        writer = csv.writer(csvfile) 
+        writer.writerow([name, major, year])
+
+def upload_csv_file_to_s3(s3, filename):    
+    file_name = f'{student_info_path}/{filename}'
+    s3.upload_file(file_name, output_bucket, filename)
+
+
 def face_recognition_handler(event, context):	
 	print("Hello")
 
 
 if __name__ == '__main__':
 
+    s3 = boto3.client('s3')
+
+    items = load_dynamodb()
+
     encodings = open_encoding('encoding')
     #print(encodings)
 
-    mp4_list = download_videos_from_in_s3()
+    mp4_list = download_videos_from_in_s3(s3)
     #print(mp4_list)
     
     for mp4_file in mp4_list:
@@ -101,5 +137,10 @@ if __name__ == '__main__':
         face_encoding = get_face_encoding(jpeg_file)   
         person = search_face_from_encodings(face_encoding, encodings)     
         if (person != None):
-            print(mp4_file, person[0])
-    
+            item = find_item(person[0], items)
+            if (item != None):
+                print(mp4_file, item['name'], item['major'], item['year'])
+                file_title_and_ext = mp4_file.rsplit('.')
+                file_title = file_title_and_ext[0]
+                save_and_get_csv_file(file_title, item['name'], item['major'], item['year'])
+                upload_csv_file_to_s3(s3, f'{file_title}.csv')

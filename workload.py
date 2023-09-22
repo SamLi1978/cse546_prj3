@@ -54,11 +54,11 @@ def upload_files(test_case):
 	
 def workload_generator():
 	
-	print("Running Test Case 1")
-	upload_files("test_case_1")
+	#print("Running Test Case 1")
+	#upload_files("test_case_1")
 
-	#print("Running Test Case 2")
-	#upload_files("test_case_2")
+	print("Running Test Case 2")
+	upload_files("test_case_2")
 	
 print(input_bucket)
 clear_input_bucket()
